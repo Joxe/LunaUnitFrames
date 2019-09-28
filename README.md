@@ -1,3 +1,8 @@
+Some minor patches by Joxe.
+
+- Re-adding the font and bar texture from Luna for 1.12
+
+========== Original Readme below ==========
 # LunaUnitFrames
 Unit Frames for WoW Classic
 
