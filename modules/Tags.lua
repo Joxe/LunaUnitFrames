@@ -8,6 +8,17 @@ local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
 local UnitHasHealthData = function(unit) return not UnitPlayerControlled(unit) or UnitIsUnit("player", unit) or UnitPlayerOrPetInParty(unit) or UnitPlayerOrPetInRaid(unit) end
 
+function FormatThousand(value)
+	local stringValue = string.format("%d", math.floor(value))
+	local pos = string.len(stringValue) % 3
+
+	if pos == 0 then
+		pos = 3
+	end
+
+	return string.sub(stringValue, 1, pos) .. string.gsub(string.sub(stringValue, pos + 1), "(...)", " %1")
+end
+
 local DruidForms = {
 	[24858] = GetSpellInfo(24858),
 	[1066] = GetSpellInfo(1066),
@@ -364,6 +375,14 @@ local defaultTags = {
 	["hp"]					= function(frame, unit)
 								return UnitHealth(unit)
 							end;
+	["hpk"]					= function(frame, unit)
+								local hp = UnitHealth(unit)
+								if hp > 999 then
+									return FormatThousand(hp)
+								else
+									return hp
+								end
+							end;
 	["hpcombo"]				= function(frame, unit)
 							
 							end;
@@ -396,6 +415,14 @@ local defaultTags = {
 							end;
 	["maxhp"]				= function(frame, unit)
 								return UnitHealthMax(unit)
+							end;
+	["maxhpk"]				= function(frame, unit)
+								local maxhp = UnitHealthMax(unit)
+								if maxhp > 999 then
+									return FormatThousand(maxhp)
+								else
+									return maxhp
+								end
 							end;
 	["smaxhp"]				= function(frame, unit)
 								if UnitHealthMax(unit) > 1000 then
