@@ -14,6 +14,8 @@ local InfoTags = {
 	["cnumtargeting"] = true,
 	["br"] = true,
 	["name"] = true,
+	["nameafk"] = true,
+	["afk"] = true,
 	["shortname:x"] = true,
 	["abbrev:name"] = true,
 	["guild"] = true,
@@ -43,6 +45,7 @@ local InfoTags = {
 	["group"] = true,
 	["combat"] = true,
 	["loyalty"] = true,
+	["buffcount"] = true,
 }
 local HealthnPowerTags = {
 	["namehealerhealth"] = true,
@@ -50,7 +53,9 @@ local HealthnPowerTags = {
 	["smart:healmishp"] = true,
 	["cpoints"] = true,
 	["smarthealth"] = true,
+	["smarthealthp"] = true,
 	["ssmarthealth"] = true,
+	["ssmarthealthp"] = true,
 	["healhp"] = true,
 	["hp"] = true,
 	["shp"] = true,
@@ -112,8 +117,10 @@ local UnitToFrame = {
 	["raidpet"] = "LUFHeaderraidpet",
 	["maintank"] = "LUFHeadermaintank",
 	["maintanktarget"] = "LUFHeadermaintanktarget",
+	["maintanktargettarget"] = "LUFHeadermaintanktargettarget",
 	["mainassist"] = "LUFHeadermainassist",
 	["mainassisttarget"] = "LUFHeadermainassisttarget",
+	["mainassisttargettarget"] = "LUFHeadermainassisttargettarget",
 }
 
 function LunaUF:CreateConfig()
@@ -204,9 +211,20 @@ function LunaUF:CreateConfig()
 		LunaUF.Layout:Reload()
 	end
 
+	local function setBGColor(info, r, g, b, a)
+		local db = LunaUF.db.profile.colors[info[#info]]
+		db.r = r
+		db.g = g
+		db.b = b
+		db.a = a
+		for _, frame in pairs(LunaUF.Units.unitFrames) do
+			LunaUF.Layout:SetBGColor(frame)
+		end
+	end
+
 	local function getColor(info)
 		local db = LunaUF.db.profile.colors[info[#info]]
-		return db.r, db.g ,db.b
+		return db.r, db.g ,db.b, db.a
 	end
 
 	local MediaList = {}
@@ -399,8 +417,10 @@ function LunaUF:CreateConfig()
 				["LUFHeaderraidpet"]=L["raidpet"],
 				["LUFHeadermaintank"]=L["maintank"],
 				["LUFHeadermaintanktarget"]=L["maintanktarget"],
+				["LUFHeadermaintanktargettarget"]=L["maintanktargettarget"],
 				["LUFHeadermainassist"]=L["mainassist"],
 				["LUFHeadermainassisttarget"]=L["mainassisttarget"],
+				["LUFHeadermainassisttargettarget"]=L["mainassisttargettarget"],
 			}
 		for key in pairs(deepAnchorCheck({[UnitToFrame[unit]]=true})) do
 			tbl[key] = nil
@@ -2985,11 +3005,6 @@ function LunaUF:CreateConfig()
 					type = "toggle",
 					order = 1,
 				},
-				description = {
-					name = L["Note: This bar only works with 5/5 Reckoning and at least 1/5 Redoubt talents."],
-					type = "description",
-					order = 2,
-				},
 				autoHide = {
 					name = L["Auto hide"],
 					desc = string.format(L["Hide when inactive"]),
@@ -3532,6 +3547,19 @@ function LunaUF:CreateConfig()
 						type = "color",
 						order = 37,
 						width = "half",
+					},
+					headerBGColors = {
+						name = L["Background"],
+						type = "header",
+						order = 38,
+					},
+					background = {
+						name = L["Background"],
+						type = "color",
+						order = 39,
+						width = "half",
+						hasAlpha = true,
+						set = setBGColor,
 					},
 				},
 			},
@@ -4588,7 +4616,7 @@ function LunaUF:CreateConfig()
 						desc = L["Set the size of the group number."],
 						type = "range",
 						order = 2.37,
-						min = -6,
+						min = 1,
 						max = 20,
 						step = 1,
 						disabled = Lockdown,
@@ -5391,6 +5419,128 @@ function LunaUF:CreateConfig()
 					},
 				},
 			},
+			maintanktargettarget = {
+				name = L["maintanktargettarget"],
+				type = "group",
+				order = 15,
+				arg = LunaUF.db.profile.units.maintanktargettarget,
+				args = {
+					enabled = {
+						name = L["Enable"],
+						desc = string.format(L["Enable the %s frame(s)"], L["maintanktargettarget"]),
+						type = "toggle",
+						order = 1,
+						disabled = Lockdown,
+						set = setEnableUnit,
+					},
+					headerGeneralOptions = {
+						name = L["General"],
+						type = "header",
+						order = 2,
+					},
+					height = {
+						name = L["Height"],
+						desc = L["Set the height of the frame."],
+						type = "range",
+						order = 2.1,
+						min = 10,
+						max = 200,
+						step = 1,
+						width = "full",
+						disabled = Lockdown,
+					},
+					width = {
+						name = L["Width"],
+						desc = L["Set the width of the frame."],
+						type = "range",
+						order = 2.2,
+						min = 20,
+						max = 400,
+						step = 1,
+						width = "full",
+						disabled = Lockdown,
+					},
+					scale = {
+						name = L["Scale"],
+						desc = L["Set the scale of the frame."],
+						type = "range",
+						order = 2.3,
+						min = 0.5,
+						max = 3,
+						step = 0.01,
+						isPercent = true,
+						width = "double",
+						disabled = Lockdown,
+					},
+					offset = {
+						name = L["Offset"],
+						desc = L["Set the space between units."],
+						type = "range",
+						order = 2.4,
+						min = 0,
+						max = 200,
+						step = 1,
+						disabled = Lockdown,
+						set = function(info, value) set(info,value) LunaUF.Units:ReloadHeader("maintanktargettarget") end,
+					},
+					anchorTo = {
+						name = L["Anchor To"],
+						desc = L["Anchor to another frame."],
+						type = "select",
+						order = 2.5,
+						values = getAnchors,
+						set = SetAnchorTo,
+						disabled = Lockdown,
+					},
+					x = {
+						name = L["X Position"],
+						desc = L["Set the position of the frame."],
+						type = "input",
+						order = 2.6,
+						validate = nbrValidate,
+						get = function() return tostring(LunaUF.db.profile.units["maintanktargettarget"].x) end,
+						set = function(info, value) LunaUF.db.profile.units["maintanktargettarget"].x = tonumber(value) LunaUF.Units:ReloadHeader("maintanktargettarget") end,
+						disabled = Lockdown,
+					},
+					y = {
+						name = L["Y Position"],
+						desc = L["Set the position of the frame."],
+						type = "input",
+						order = 2.7,
+						validate = nbrValidate,
+						get = function() return tostring(LunaUF.db.profile.units["maintanktargettarget"].y) end,
+						set = function(info, value) LunaUF.db.profile.units["maintanktargettarget"].y = tonumber(value) LunaUF.Units:ReloadHeader("maintanktargettarget") end,
+						disabled = Lockdown,
+					},
+					attribPoint = {
+						name = L["Growth direction"],
+						desc = L["The direction in which new frames are added."],
+						type = "select",
+						order = 2.8,
+						values = {["RIGHT"] = L["Left"],["LEFT"] = L["Right"],["BOTTOM"] = L["Up"],["TOP"] = L["Down"]},
+						set = setGrowthDir,
+						disabled = Lockdown,
+					},
+					sortMethod = {
+						name = L["Sort by"],
+						desc = L["Sort by name or index"],
+						type = "select",
+						order = 2.9,
+						values = {["INDEX"] = L["Index"],["NAME"] = L["Name"]},
+						set = setSortMethod,
+						disabled = Lockdown,
+					},
+					sortOrder = {
+						name = L["Sort order"],
+						desc = L["Sort ascending or descending"],
+						type = "select",
+						order = 2.91,
+						values = {["ASC"] = L["Ascending"],["DESC"] = L["Descending"]},
+						set = setSortOrder,
+						disabled = Lockdown,
+					},
+				},
+			},
 			mainassist = {
 				name = L["mainassist"],
 				type = "group",
@@ -5604,6 +5754,128 @@ function LunaUF:CreateConfig()
 						validate = nbrValidate,
 						get = function() return tostring(LunaUF.db.profile.units["mainassisttarget"].y) end,
 						set = function(info, value) LunaUF.db.profile.units["mainassisttarget"].y = tonumber(value) LunaUF.Units:ReloadHeader("mainassisttarget") end,
+						disabled = Lockdown,
+					},
+					attribPoint = {
+						name = L["Growth direction"],
+						desc = L["The direction in which new frames are added."],
+						type = "select",
+						order = 2.8,
+						values = {["RIGHT"] = L["Left"],["LEFT"] = L["Right"],["BOTTOM"] = L["Up"],["TOP"] = L["Down"]},
+						set = setGrowthDir,
+						disabled = Lockdown,
+					},
+					sortMethod = {
+						name = L["Sort by"],
+						desc = L["Sort by name or index"],
+						type = "select",
+						order = 2.9,
+						values = {["INDEX"] = L["Index"],["NAME"] = L["Name"]},
+						set = setSortMethod,
+						disabled = Lockdown,
+					},
+					sortOrder = {
+						name = L["Sort order"],
+						desc = L["Sort ascending or descending"],
+						type = "select",
+						order = 2.91,
+						values = {["ASC"] = L["Ascending"],["DESC"] = L["Descending"]},
+						set = setSortOrder,
+						disabled = Lockdown,
+					},
+				},
+			},
+			mainassisttargettarget = {
+				name = L["mainassisttargettarget"],
+				type = "group",
+				order = 17,
+				arg = LunaUF.db.profile.units.mainassisttargettarget,
+				args = {
+					enabled = {
+						name = L["Enable"],
+						desc = string.format(L["Enable the %s frame(s)"], L["mainassisttargettarget"]),
+						type = "toggle",
+						order = 1,
+						disabled = Lockdown,
+						set = setEnableUnit,
+					},
+					headerGeneralOptions = {
+						name = L["General"],
+						type = "header",
+						order = 2,
+					},
+					height = {
+						name = L["Height"],
+						desc = L["Set the height of the frame."],
+						type = "range",
+						order = 2.1,
+						min = 10,
+						max = 200,
+						step = 1,
+						width = "full",
+						disabled = Lockdown,
+					},
+					width = {
+						name = L["Width"],
+						desc = L["Set the width of the frame."],
+						type = "range",
+						order = 2.2,
+						min = 20,
+						max = 400,
+						step = 1,
+						width = "full",
+						disabled = Lockdown,
+					},
+					scale = {
+						name = L["Scale"],
+						desc = L["Set the scale of the frame."],
+						type = "range",
+						order = 2.3,
+						min = 0.5,
+						max = 3,
+						step = 0.01,
+						isPercent = true,
+						width = "double",
+						disabled = Lockdown,
+					},
+					offset = {
+						name = L["Offset"],
+						desc = L["Set the space between units."],
+						type = "range",
+						order = 2.4,
+						min = 0,
+						max = 200,
+						step = 1,
+						disabled = Lockdown,
+						set = function(info, value) set(info,value) LunaUF.Units:ReloadHeader("mainassisttargettarget") end,
+					},
+					anchorTo = {
+						name = L["Anchor To"],
+						desc = L["Anchor to another frame."],
+						type = "select",
+						order = 2.5,
+						values = getAnchors,
+						set = SetAnchorTo,
+						disabled = Lockdown,
+					},
+					x = {
+						name = L["X Position"],
+						desc = L["Set the position of the frame."],
+						type = "input",
+						order = 2.6,
+						validate = nbrValidate,
+						get = function() return tostring(LunaUF.db.profile.units["mainassisttargettarget"].x) end,
+						set = function(info, value) LunaUF.db.profile.units["mainassisttargettarget"].x = tonumber(value) LunaUF.Units:ReloadHeader("mainassisttargettarget") end,
+						disabled = Lockdown,
+					},
+					y = {
+						name = L["Y Position"],
+						desc = L["Set the position of the frame."],
+						type = "input",
+						order = 2.7,
+						validate = nbrValidate,
+						get = function() return tostring(LunaUF.db.profile.units["mainassisttargettarget"].y) end,
+						set = function(info, value) LunaUF.db.profile.units["mainassisttargettarget"].y = tonumber(value) LunaUF.Units:ReloadHeader("mainassisttargettarget") end,
 						disabled = Lockdown,
 					},
 					attribPoint = {
