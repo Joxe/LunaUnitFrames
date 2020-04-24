@@ -6,7 +6,7 @@ local vex = LibStub("LibVexation-1.0", true)
 
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
-local UnitHasHealthData = function(unit) return not UnitPlayerControlled(unit) or UnitIsUnit("player", unit) or UnitPlayerOrPetInParty(unit) or UnitPlayerOrPetInRaid(unit) end
+local UnitHasHealthData = function(unit) return not UnitPlayerControlled(unit) or UnitIsUnit("player", unit) or UnitIsUnit("pet", unit) or UnitPlayerOrPetInParty(unit) or UnitPlayerOrPetInRaid(unit) end
 
 function FormatThousand(value)
 	local stringValue = string.format("%d", math.floor(value))
@@ -237,7 +237,39 @@ local defaultTags = {
 								return select(2,GetGuildInfo(unit)) or ""
 							end;
 	["incheal"]				= function(frame, unit)
-								local heal = frame.incomingHeal or 0
+								local heal = frame.healValues.totalHeal or 0
+								if heal > 0 then
+									return heal
+								else
+									return ""
+								end
+							end;
+	["incownheal"]			= function(frame, unit)
+								local heal = frame.healValues.ownHeal or 0
+								if heal > 0 then
+									return heal
+								else
+									return ""
+								end
+							end;
+	["incpreheal"]			= function(frame, unit)
+								local heal = frame.healValues.preHeal or 0
+								if heal > 0 then
+									return heal
+								else
+									return ""
+								end
+							end;
+	["incafterheal"]			= function(frame, unit)
+								local heal = frame.healValues.afterHeal or 0
+								if heal > 0 then
+									return heal
+								else
+									return ""
+								end
+							end;
+	["hotheal"]			= function(frame, unit)
+								local heal = frame.healValues.Hots or 0
 								if heal > 0 then
 									return heal
 								else
@@ -254,7 +286,7 @@ local defaultTags = {
 									end
 								end
 							end;
---	["numheals"]			= function(frame, unit) return HealComm:getNumHeals(UnitName(unit)) end;
+	["numheals"]			= function(frame, unit) return frame.healValues.numHeals end;
 	["pvp"]					= function(frame, unit) return UnitIsPVP(unit) and "PVP" or "" end;
 	["smarthealth"]			= function(frame, unit)
 								local hp
@@ -281,10 +313,8 @@ local defaultTags = {
 								return hp.."/"..maxhp
 							end;
 	["smarthealthp"]			= function(frame, unit)
-								local hp
-								local maxhp
-								hp = UnitHealth(unit)
-								maxhp = UnitHealthMax(unit)
+								local hp = UnitHealth(unit)
+								local maxhp = UnitHealthMax(unit)
 								if UnitIsGhost(unit) then
 									return L["Ghost"]
 								elseif not UnitIsConnected(unit) then
@@ -306,19 +336,13 @@ local defaultTags = {
 							end;
 	["ssmarthealth"]			= function(frame, unit)
 								local hp = UnitHealth(unit)
+								local maxhp = UnitHealthMax(unit)
 								if hp < 1 then
 									if feigncheck(unit) then
 										return L["Feigned"]
 									else
 										return L["Dead"]
 									end
-								end
-								if hp > 1000 then
-									hp = (math.floor(hp/100)/10).."K"
-								end
-								local maxhp = UnitHealthMax(unit)
-								if maxhp > 1000 then
-									maxhp = (math.floor(maxhp/100)/10).."K"
 								end
 								if UnitIsGhost(unit) then
 									return L["Ghost"]
@@ -330,24 +354,24 @@ local defaultTags = {
 									else
 										return math.ceil((hp / maxhp) * 100).."%"
 									end
+								end
+								if hp > 1000 then
+									hp = (math.floor(hp/100)/10).."K"
+								end
+								if maxhp > 1000 then
+									maxhp = (math.floor(maxhp/100)/10).."K"
 								end
 								return hp.."/"..maxhp
 							end;
 	["ssmarthealthp"]			= function(frame, unit)
 								local hp = UnitHealth(unit)
+								local maxhp = UnitHealthMax(unit)
 								if hp < 1 then
 									if feigncheck(unit) then
 										return L["Feigned"]
 									else
 										return L["Dead"]
 									end
-								end
-								if hp > 1000 then
-									hp = (math.floor(hp/100)/10).."K"
-								end
-								local maxhp = UnitHealthMax(unit)
-								if maxhp > 1000 then
-									maxhp = (math.floor(maxhp/100)/10).."K"
 								end
 								if UnitIsGhost(unit) then
 									return L["Ghost"]
@@ -360,10 +384,16 @@ local defaultTags = {
 										return math.ceil((hp / maxhp) * 100).."%"
 									end
 								end
+								if hp > 1000 then
+									hp = (math.floor(hp/100)/10).."K"
+								end
+								if maxhp > 1000 then
+									maxhp = (math.floor(maxhp/100)/10).."K"
+								end
 								return hp.."/"..maxhp.." "..math.ceil((UnitHealth(unit) / UnitHealthMax(unit)) * 100).."%"
 							end;
 	["healhp"]				= function(frame, unit)
-								local heal = frame.incomingHeal or 0
+								local heal = frame.healValues.totalHeal or 0
 								local hp
 								hp = UnitHealth(unit)
 								if heal > 0 then
@@ -443,7 +473,7 @@ local defaultTags = {
 							end;
 	["healmishp"]			= function(frame, unit)
 								local hp,maxhp
-								local heal = frame.incomingHeal or 0
+								local heal = frame.healValues.totalHeal or 0
 								hp = UnitHealth(unit)
 								maxhp = UnitHealthMax(unit)
 								local result = hp-maxhp+heal
@@ -730,7 +760,7 @@ local defaultTags = {
 										return L["Dead"]
 									end
 								end
-								local heal = frame.incomingHeal or 0
+								local heal = frame.healValues.totalHeal or 0
 								local result = hp-maxhp+heal
 								if result == 0 then
 									return ""
@@ -782,7 +812,7 @@ local defaultTags = {
 										return L["Dead"]
 									end
 								end
-								local heal = frame.incomingHeal or 0
+								local heal = frame.healValues.totalHeal or 0
 								if UnitIsEnemy("player", unit) then
 									if heal == 0 then
 										return hp.."/"..maxhp
@@ -821,7 +851,7 @@ local defaultTags = {
 										return L["Dead"]
 									end
 								end
-								local heal = frame.incomingHeal or 0
+								local heal = frame.healValues.totalHeal or 0
 								if UnitIsEnemy("player", unit) then
 									if heal == 0 then
 										return hp.."/"..maxhp

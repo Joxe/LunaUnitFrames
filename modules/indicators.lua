@@ -1,4 +1,4 @@
-local Indicators = {list = {"status", "pvp", "pvprank", "leader", "rezz", "masterLoot", "raidTarget", "ready", "class", "elite", "happiness"}}
+local Indicators = {list = {"status", "pvp", "pvprank", "leader", "rezz", "masterLoot", "raidTarget", "ready", "class", "elite", "happiness", "role"}}
 
 LunaUF:RegisterModule(Indicators, "indicators", LunaUF.L["Indicators"])
 
@@ -69,7 +69,7 @@ function Indicators:UpdateElite(frame)
 	if( classif == "rare" ) then
 		frame.indicators.elite:SetTexture("Interface\\AddOns\\LunaUnitFrames\\media\\textures\\UI-DialogBox-Silver-Dragon"..suffix)
 		frame.indicators.elite:Show()
-	elseif classif == "normal" then
+	elseif classif == "normal" and not (UnitIsUnit("player", frame.unit) and LunaUF.db.profile.units.player.indicators.elite.enabled or UnitIsUnit("pet", frame.unit) and LunaUF.db.profile.units.pet.indicators.elite.enabled) then
 		frame.indicators.elite:Hide()
 	else
 		frame.indicators.elite:SetTexture("Interface\\AddOns\\LunaUnitFrames\\media\\textures\\UI-DialogBox-Gold-Dragon"..suffix)
@@ -255,6 +255,20 @@ function Indicators:UpdateReadyCheck(frame, event)
 	frame.indicators.ready:Show()
 end
 
+function Indicators:UpdateRole(frame)
+	if( not frame.indicators.role or not frame.indicators.role.enabled ) then return end
+	
+	if GetPartyAssignment("MAINTANK", frame.unit, true) then
+		frame.indicators.role:SetTexture("Interface\\GroupFrame\\UI-Group-MainTankIcon")
+		frame.indicators.role:Show()
+	elseif GetPartyAssignment("MAINASSIST", frame.unit, true) then
+		frame.indicators.role:SetTexture("Interface\\GroupFrame\\UI-Group-MainAssistIcon")
+		frame.indicators.role:Show()
+	else
+		frame.indicators.role:Hide()
+	end
+end
+
 function Indicators:OnEnable(frame)
 	-- Forces the indicators to be above the bars/portraits/etc
 	if( not frame.indicators ) then
@@ -362,6 +376,13 @@ function Indicators:OnEnable(frame)
 	-- As they all share the function, register it as long as one is active
 	if( frame.indicators.leader or frame.indicators.masterLoot ) then
 		frame:RegisterNormalEvent("GROUP_ROSTER_UPDATE", self, "GroupRosterUpdate")
+	end
+
+	if( config.indicators.role and config.indicators.role.enabled ) then
+		frame:RegisterNormalEvent("PLAYER_ROLES_ASSIGNED", self, "UpdateRole")
+		frame:RegisterUpdateFunc(self, "UpdateRole")
+		
+		frame.indicators.role = frame.indicators.role or frame.indicators:CreateTexture(nil, "OVERLAY")
 	end
 end
 

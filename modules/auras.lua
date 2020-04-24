@@ -26,7 +26,7 @@ local function updateTooltip(self)
 end
 
 local function showTooltip(self)
-	if( not LunaUF.db.profile.locked ) then return end
+	if( not LunaUF.db.profile.locked and LunaUF.db.profile.previewauras ) then return end
 	if( GameTooltip:IsForbidden() ) then return end
 
 	GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
@@ -62,29 +62,33 @@ local function UpdateWeaponEnchants(self, elapsed)
 
 	local changed
 	local hasMain, mainTimeLeft, mainCharges, mainEnchantId, hasOff, offTimeLeft, offCharges, offEnchantId = GetWeaponEnchantInfo()
-	mainTimeLeft = mainTimeLeft or 0
-	offTimeLeft = offTimeLeft or 0
-	mainTimeLeft = mainTimeLeft / 1000
-	offTimeLeft = offTimeLeft / 1000
-	if hasMain ~= mainEnchant.exists or mainTimeLeft > mainEnchant.timeLeft or mainCharges ~= mainEnchant.charges then
+	mainTimeLeft = (mainTimeLeft or 0) / 1000
+	offTimeLeft = (offTimeLeft or 0) / 1000
+	if hasMain ~= mainEnchant.exists or mainTimeLeft > mainEnchant.timeLeft then
 		changed = true
 		mainEnchant.exists = hasMain
-		mainEnchant.timeLeft = mainTimeLeft
 		mainEnchant.charges = mainCharges
 		mainEnchant.id = mainEnchantId
 		mainEnchant.startTime = GetTime()
+	elseif mainCharges ~= mainEnchant.charges then
+		changed = true
+		mainEnchant.charges = mainCharges
 	end
-	if hasOff ~= offEnchant.exists or offTimeLeft > offEnchant.timeLeft or offCharges ~= offEnchant.charges then
+	mainEnchant.timeLeft = mainTimeLeft
+	if hasOff ~= offEnchant.exists or offTimeLeft > offEnchant.timeLeft then
 		changed = true
 		offEnchant.exists = hasOff
-		offEnchant.timeLeft = offTimeLeft
 		offEnchant.charges = offCharges
 		offEnchant.id = offEnchantId
 		offEnchant.startTime = GetTime()
+	elseif offCharges ~= offEnchant.charges then
+		changed = true
+		offEnchant.charges = offCharges
 	end
+	offEnchant.timeLeft = offTimeLeft
 	if changed then
 		for _,frame in pairs(LunaUF.Units.unitFrames) do
-			if frame.unit and frame.unit == "player" then
+			if frame.unitType == "player" then
 				Auras:Update(frame)
 			end
 		end
@@ -225,7 +229,7 @@ end
 
 function Auras:UpdateFrames(frame)
 	local config = LunaUF.db.profile.units[frame.unitType].auras
-	local name, texture, count, auraType, duration, endTime, caster, spellID, main, off
+	local name, texture, count, auraType, duration, endTime, caster, spellID, main, off, _
 	local filter = "HELPFUL"..(config.filterbuffs == 2 and "|PLAYER" or config.filterbuffs == 3 and "|RAID" or "")
 	for i,button in ipairs(frame.auras.buffbuttons.buttons) do
 		button.cooldown.noCooldownCount = LunaUF.db.profile.omnicc
@@ -240,7 +244,7 @@ function Auras:UpdateFrames(frame)
 		else
 			texture = nil
 		end
-		if not LunaUF.db.profile.locked then
+		if not LunaUF.db.profile.locked and LunaUF.db.profile.previewauras then
 			duration = 0
 			endTime = 0
 			if i < 33 and config.buffs then
@@ -272,7 +276,7 @@ function Auras:UpdateFrames(frame)
 			else
 				button.border:SetVertexColor(1,1,1)
 			end
-			if config.timer == "self" and button.large or config.timer == "all" and duration ~= 0 then
+			if (config.timer == "self" and caster and UnitIsUnit("player", caster)) or config.timer == "all" and duration ~= 0 then
 				button.cooldown:Show()
 				button.cooldown:SetCooldown(endTime - duration, duration)
 			else
@@ -335,17 +339,12 @@ function Auras:UpdateFrames(frame)
 		button.cooldown.noCooldownCount = LunaUF.db.profile.omnicc
 		button.cooldown:SetHideCountdownNumbers(LunaUF.db.profile.blizzardcc)
 		name, texture, count, auraType, duration, endTime, caster, _, _, spellID = lCD:UnitAura(frame.unit, i, filter)
---		if (not duration or duration == 0) and spellID then
---			local Newduration, NewendTime = lCD:GetAuraDurationByUnit(frame.unit, spellID, caster)
---			duration = Newduration or duration
---			endTime = NewendTime or endTime
---		end
 		if caster and UnitIsUnit("player", caster) and config.emphasizeDebuffs then
 			button.large = true
 		else
 			button.large = nil
 		end
-		if not LunaUF.db.profile.locked then
+		if not LunaUF.db.profile.locked and LunaUF.db.profile.previewauras then
 			duration = 0
 			endTime = 0
 			texture = "Interface\\Icons\\Spell_ChargeNegative"
@@ -370,7 +369,7 @@ function Auras:UpdateFrames(frame)
 			else
 				button.border:SetVertexColor(1,1,1)
 			end
-			if config.timer == "self" and button.large or config.timer == "all" and duration ~= 0 then
+			if (config.timer == "self" and caster and UnitIsUnit("player", caster)) or config.timer == "all" and duration ~= 0 then
 				button.cooldown:Show()
 				button.cooldown:SetCooldown(endTime - duration, duration)
 			else

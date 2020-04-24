@@ -2,10 +2,10 @@ local Addon = select(1, ...)
 
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
-
 local SML = SML or LibStub:GetLibrary("LibSharedMedia-3.0")
-
 local ACR = LibStub("AceConfigRegistry-3.0", true)
+
+local resolutionselectvalue,groupselectvalue, profiledb = GetCurrentResolution(), "SOLO", {}
 
 local L = LunaUF.L
 
@@ -78,7 +78,11 @@ local HealthnPowerTags = {
 	["druid:missingpp"] = true,
 	["druid:perpp"] = true,
 	["incheal"] = true,
---	["numheals"] = true,
+	["numheals"] = true,
+	["incownheal"] = true,
+	["incpreheal"] = true,
+	["incafterheal"] = true,
+	["hotheal"] = true,
 }
 local ColorTags = {
 	["combatcolor"] = true,
@@ -537,6 +541,12 @@ function LunaUF:CreateConfig()
 					type = "toggle",
 					order = 9,
 				},
+				invert = {
+					name = L["Invert"],
+					desc = L["Kind of inverts the color scheme."],
+					type = "toggle",
+					order = 10,
+				},
 			},
 		},
 		["powerBar"] = {
@@ -628,10 +638,34 @@ function LunaUF:CreateConfig()
 				},
 			},
 		},
+		["manaPrediction"] = {
+			name = L["Mana Prediction"],
+			type = "group",
+			order = 5,
+			inline = true,
+			hidden = function(info) return not (info[1] == "player") end,
+			args = {
+				enabled = {
+					name = L["Enable"],
+					desc = string.format(L["Enable or disable the %s."],L["Mana Prediction"]),
+					type = "toggle",
+					order = 1,
+				},
+				color = {
+					name = L["Color"],
+					type = "color",
+					order = 2,
+					width = "half",
+					hasAlpha = true,
+					get = function(info) local db = LunaUF.db.profile.units.player.manaPrediction.color return db.r, db.g ,db.b, db.a end,
+					set = function(info, r, g, b, a) local db = LunaUF.db.profile.units.player.manaPrediction.color db.r = r db.g = g db.b = b db.a = a LunaUF.Layout:Reload() end,
+				},
+			},
+		},
 		["castBar"] = {
 			name = L["Cast Bar"],
 			type = "group",
-			order = 5,
+			order = 6,
 			inline = true,
 			args = {
 				enabled = {
@@ -684,7 +718,7 @@ function LunaUF:CreateConfig()
 		["emptyBar"] = {
 			name = L["Empty bar"],
 			type = "group",
-			order = 6,
+			order = 7,
 			inline = true,
 			args = {
 				enabled = {
@@ -707,7 +741,7 @@ function LunaUF:CreateConfig()
 					--desc = L["Color by reaction"],
 					type = "select",
 					order = 3,
-					values = {["none"] = L["Never (Disabled)"], ["player"] = L["Players only"], ["npc"] = L["NPCs only"], ["both"] = L["Both"]},
+					values = {["none"] = L["Never (Disabled)"], ["player"] = L["Players only"], ["NPC/hostile player"] = L["NPCs and Hostile players"], ["npc"] = L["NPCs only"], ["both"] = L["Both"]},
 				},
 				class = {
 					name = L["Class Colors"],
@@ -752,7 +786,7 @@ function LunaUF:CreateConfig()
 		["range"] = {
 			name = L["Range"],
 			type = "group",
-			order = 7,
+			order = 8,
 			inline = true,
 			args = {
 				enabled = {
@@ -766,7 +800,7 @@ function LunaUF:CreateConfig()
 		["portrait"] = {
 			name = L["Portrait"],
 			type = "group",
-			order = 8,
+			order = 9,
 			inline = true,
 			args = {
 				enabled = {
@@ -780,7 +814,7 @@ function LunaUF:CreateConfig()
 					desc = L["Portrait type"],
 					type = "select",
 					order = 2,
-					values = {["3D"] = L["3D"], ["2D"] = L["2D"], ["class"] = L["Class"]},
+					values = {["3D"] = L["3D"], ["2D"] = L["2D"], ["class"] = L["Class"], ["2dclass"] = L["2D Class"]},
 				},
 				alignment = {
 					name = L["Alignment"],
@@ -839,7 +873,7 @@ function LunaUF:CreateConfig()
 		["incHeal"] = {
 			name = L["Incoming heals"],
 			type = "group",
-			order = 9,
+			order = 10,
 			inline = true,
 			args = {
 				enabled = {
@@ -871,7 +905,7 @@ function LunaUF:CreateConfig()
 		["auras"] = {
 			name = L["Auras"],
 			type = "group",
-			order = 10,
+			order = 11,
 			inline = true,
 			args = {
 				generalheader = {
@@ -1009,12 +1043,21 @@ function LunaUF:CreateConfig()
 					order = 19,
 					values = {["LEFT"] = L["Left"], ["RIGHT"] = L["Right"], ["TOP"] = L["Top"], ["BOTTOM"] = L["Bottom"], ["INFRAME"] = L["Inside"], ["INFRAMECENTER"] = L["Inside Center"]},
 				},
+				wrap = {
+					name = L["Horizontal Limit"],
+					desc = L["Set the debuffsize."],
+					type = "range",
+					order = 16,
+					min = 4,
+					max = 50,
+					step = 1,
+				},
 			},
 		},
 		["borders"] = {
 			name = L["Borders"],
 			type = "group",
-			order = 11,
+			order = 12,
 			inline = true,
 			args = {
 				target = {
@@ -1048,7 +1091,7 @@ function LunaUF:CreateConfig()
 		["highlight"] = {
 			name = L["Highlight"],
 			type = "group",
-			order = 12,
+			order = 13,
 			inline = true,
 			args = {
 				target = {
@@ -1082,7 +1125,7 @@ function LunaUF:CreateConfig()
 		["fader"] = {
 			name = L["Combat fader"],
 			type = "group",
-			order = 13,
+			order = 14,
 			inline = true,
 			args = {
 				enabled = {
@@ -1120,7 +1163,7 @@ function LunaUF:CreateConfig()
 		["tags"] = {
 			name = L["Tags"],
 			type = "group",
-			order = 14,
+			order = 15,
 			inline = true,
 			args = {
 				top = {
@@ -1914,7 +1957,7 @@ function LunaUF:CreateConfig()
 		["indicators"] = {
 			name = L["Indicators"],
 			type = "group",
-			order = 15,
+			order = 16,
 			inline = true,
 			args = {
 				raidTarget = {
@@ -2429,12 +2472,61 @@ function LunaUF:CreateConfig()
 						},
 					},
 				},
+				role = {
+					name = L["Raid Role"],
+					type = "group",
+					order = 12,
+					inline = true,
+					hidden = function(info) return not LunaUF.db.profile.units[info[1]].indicators[info[3]] end,
+					args = {
+						enabled = {
+							name = L["Enable"],
+							desc = string.format(L["Enable or disable the %s."],L["Raid Role"]),
+							type = "toggle",
+							order = 1,
+						},
+						size = {
+							name = L["Size"],
+							desc = L["Set the size."],
+							type = "range",
+							order = 2,
+							min = 5,
+							max = 40,
+							step = 1,
+						},
+						anchorPoint = {
+							name = L["Point"],
+							desc = L["Anchor point"],
+							type = "select",
+							order = 3,
+							values = {["TOPLEFT"] = L["Top left"], ["LEFT"] = L["Left"], ["BOTTOMLEFT"] = L["Bottom left"], ["TOP"] = L["Top"], ["CENTER"] = L["Center"], ["BOTTOM"] = L["Bottom"], ["TOPRIGHT"] = L["Top right"], ["RIGHT"] = L["Right"], ["BOTTOMRIGHT"] = L["Bottom right"]},
+						},
+						x = {
+							name = L["X Position"],
+							desc = L["Set the X coordinate."],
+							type = "range",
+							order = 4,
+							min = -50,
+							max = 50,
+							step = 1,
+						},
+						y = {
+							name = L["Y Position"],
+							desc = L["Set the Y coordinate."],
+							type = "range",
+							order = 5,
+							min = -100,
+							max = 100,
+							step = 1,
+						},
+					},
+				},
 			},
 		},
 		["combatText"] = {
 			name = L["Combat text"],
 			type = "group",
-			order = 16,
+			order = 17,
 			hidden = function(info) return LunaUF.fakeUnits[info[1]] end,
 			inline = true,
 			args = {
@@ -2467,7 +2559,7 @@ function LunaUF:CreateConfig()
 		["squares"] = {
 			name = L["Squares"],
 			type = "group",
-			order = 17,
+			order = 18,
 			inline = true,
 			args = {
 				topleft = {
@@ -3208,35 +3300,43 @@ function LunaUF:CreateConfig()
 						name = "Luna Unit Frames by Aviana\nDonate: paypal.me/LunaUnitFrames\n".."Version: "..LunaUF.version,
 						type = "description",
 						width = "full",
-						order = 1.1,
+						order = 2,
 					},
 					header = {
 						name = L["Global Settings"],
 						type = "header",
 						width = "double",
-						order = 2,
+						order = 3,
 					},
 					locked = {
 						name = L["Lock"],
 						desc = L["Lock the frames"],
 						type = "toggle",
-						order = 3,
+						order = 4,
 						disabled = Lockdown,
 						set = function(info, value) setGeneral(info, value) LunaUF.modules.movers:Update() end,
+					},
+					previewauras = {
+						name = L["Preview Auras"],
+						desc = L["Show the maximum Auras in preview mode"],
+						type = "toggle",
+						order = 5,
+						disabled = Lockdown,
+						set = function(info, value) setGeneral(info, value) LunaUF.Layout:Reload() end,
 					},
 					tooltipCombat = {
 						name = L["Tooltip in Combat"],
 						desc = L["Show unitframe tooltips in combat"],
 						type = "toggle",
-						order = 3,
+						order = 6,
 					},
 					headerGlobalSettings = {
 						name = L["Global Unit Settings"],
 						type = "header",
-						order = 4,
+						order = 7,
 					},
 					statusbar = {
-						order = 5,
+						order = 8,
 						type = "select",
 						name = L["Bar texture"],
 						dialogControl = "LSM30_Statusbar",
@@ -3245,7 +3345,7 @@ function LunaUF:CreateConfig()
 						set = function(info, value) wipeTextures() setGeneral(info, value) LunaUF.Layout:Reload() end,
 					},
 					font = {
-						order = 6,
+						order = 9,
 						type = "select",
 						name = L["Font"],
 						dialogControl = "LSM30_Font",
@@ -3254,7 +3354,7 @@ function LunaUF:CreateConfig()
 						set = function(info, value) wipeFonts() setGeneral(info, value) LunaUF.Layout:Reload() LunaUF.Units:ReloadHeader("raid") LunaUF.Units:ReloadHeader("raidpet") end,
 					},
 					auraborderType = {
-						order = 7,
+						order = 10,
 						type = "select",
 						name = L["Aura border"],
 						values = {["none"] = L["None"], ["blizzard"] = "Blizzard", ["light"] = L["Light"], ["dark"] = L["Dark"], ["black"] = L["Black"]},
@@ -3264,7 +3364,7 @@ function LunaUF:CreateConfig()
 						name = L["Heal prediction timeframe"],
 						desc = L["Set how long into the future heals are predicted."],
 						type = "range",
-						order = 8,
+						order = 11,
 						min = 3,
 						max = 21,
 						step = 0.5,
@@ -3273,13 +3373,13 @@ function LunaUF:CreateConfig()
 						name = L["Disable hots"],
 						desc = L["Disable hots in heal prediction"],
 						type = "toggle",
-						order = 9,
+						order = 12,
 					},
 					omnicc = {
 						name = L["Disable OmniCC"],
 						desc = L["Prevent OmniCC from putting numbers on cooldown animations (Requires UI reload)"],
 						type = "toggle",
-						order = 10,
+						order = 13,
 						disabled = Lockdown,
 						set = function(info, value) setGeneral(info, value) for frame in pairs(LunaUF.Units.frameList) do frame:FullUpdate() end end,
 					},
@@ -3287,20 +3387,20 @@ function LunaUF:CreateConfig()
 						name = L["Disable Blizzard cooldown count"],
 						desc = L["Prevent the default UI from putting numbers on cooldown animations"],
 						type = "toggle",
-						order = 11,
+						order = 14,
 						disabled = Lockdown,
 						set = function(info, value) setGeneral(info, value) for frame in pairs(LunaUF.Units.frameList) do frame:FullUpdate() end end,
 					},
 					headerRange = {
 						name = L["Range"],
 						type = "header",
-						order = 12,
+						order = 15,
 					},
 					range = {
 						name = L["Distance"],
 						desc = L["Distance to measure"],
 						type = "select",
-						order = 13,
+						order = 16,
 						values = {[10] = L["10y"], [30] = L["30y"], [40] = L["Spell based"], [100] = L["Is Visible"], },
 						get = function(info) return LunaUF.db.profile.range.dist end,
 						set = function(info, value) LunaUF.db.profile.range.dist = value end,
@@ -3309,7 +3409,7 @@ function LunaUF:CreateConfig()
 						name = L["Alpha"],
 						desc = L["Set the alpha."],
 						type = "range",
-						order = 14,
+						order = 17,
 						min = 0.01,
 						max = 1,
 						step = 0.01,
@@ -3320,7 +3420,7 @@ function LunaUF:CreateConfig()
 						name = L["Range Frequency"],
 						desc = L["Set the interval of range checking."],
 						type = "range",
-						order = 15,
+						order = 18,
 						min = 0.1,
 						max = 1,
 						step = 0.1,
@@ -3476,89 +3576,101 @@ function LunaUF:CreateConfig()
 						order = 24,
 						width = "half",
 					},
+					incownheal = {
+						name = L["Inc Own Heal"],
+						type = "color",
+						order = 25,
+						width = "half",
+					},
+					inchots = {
+						name = L["Inc Hots"],
+						type = "color",
+						order = 26,
+						width = "half",
+					},
 					enemyUnattack = {
 						name = L["Enemy unattackable"],
 						type = "color",
-						order = 25,
+						order = 27,
 					},
 					enemyCivilian = {
 						name = L["Enemy civilian"],
 						type = "color",
-						order = 26,
+						order = 28,
 					},
 					hostile = {
 						name = L["Hostile"],
 						type = "color",
-						order = 27,
+						order = 29,
 						width = "half",
 					},
 					aggro = {
 						name = L["Aggro"],
 						type = "color",
-						order = 28,
+						order = 30,
 						width = "half",
 					},
 					friendly = {
 						name = L["Friendly"],
 						type = "color",
-						order = 29,
+						order = 31,
 						width = "half",
 					},
 					neutral = {
 						name = L["Neutral"],
 						type = "color",
-						order = 30,
+						order = 32,
 						width = "half",
 					},
 					offline = {
 						name = L["Offline"],
 						type = "color",
-						order = 31,
+						order = 33,
 						width = "half",
 					},
 					headerCastColors = {
 						name = L["Cast Colors"],
 						type = "header",
-						order = 32,
+						order = 34,
 					},
 					channel = {
 						name = L["Channel"],
 						type = "color",
-						order = 33,
+						order = 35,
 						width = "half",
 					},
 					cast = {
 						name = L["Cast"],
 						type = "color",
-						order = 34,
+						order = 36,
 						width = "half",
 					},
 					headerXPColors = {
 						name = L["XP Colors"],
 						type = "header",
-						order = 35,
+						order = 37,
 					},
 					normal = {
 						name = L["Normal"],
 						type = "color",
-						order = 36,
+						order = 38,
 						width = "half",
 					},
 					rested = {
 						name = L["Rested"],
 						type = "color",
-						order = 37,
+						order = 39,
 						width = "half",
 					},
 					headerBGColors = {
 						name = L["Background"],
 						type = "header",
-						order = 38,
+						order = 40,
 					},
 					background = {
 						name = L["Background"],
 						type = "color",
-						order = 39,
+						order = 41,
 						width = "half",
 						hasAlpha = true,
 						set = setBGColor,
@@ -5998,6 +6110,102 @@ function LunaUF:CreateConfig()
 					},
 				},
 			},
+			autoprofiles = {
+				name = L["Auto Profiles"],
+				type = "group",
+				order = 20,
+				args = {
+					help = {
+						order = 1,
+						type = "group",
+						name = L["Auto Profiles - Help"],
+						inline = true,
+						args = {
+							description = {
+								type = "description",
+								name = L["You can set up here which profiles should be automatically loaded on certain conditions."],
+								width = "full",
+							},
+						},
+					},
+					switchtype = {
+						name = L["Switch by"],
+						desc = L["Type of event to switch to"],
+						type = "select",
+						order = 2,
+						values = {["DISABLED"] = L["Disabled"], ["RESOLUTION"] = L["Screen Resolution"],["GROUP"] = L["Size of Group"]},
+						get = function(info) return LunaUF.db.global.switchtype end,
+						set = function(info, value) LunaUF.db.global.switchtype = value LunaUF:AutoswitchProfileSetup() end,
+					},
+					resolutionselect = {
+						name = L["Screen Resolution"],
+						desc = L["Resolution to assign a profile to"],
+						type = "select",
+						order = 3,
+						hidden = function() return LunaUF.db.global.switchtype ~= "RESOLUTION" end,
+						values = {GetScreenResolutions()},
+						get = function(info) return resolutionselectvalue end,
+						set = function(info, value) resolutionselectvalue = value end,
+					},
+					groupselect = {
+						name = L["Size of Group"],
+						desc = L["Size of group to assign a profile to"],
+						type = "select",
+						order = 4,
+						hidden = function() return LunaUF.db.global.switchtype ~= "GROUP" end,
+						values = {["RAID40"]=L["Raid40"],["RAID20"]=L["Raid20"],["RAID5"]=L["Raid5"],["PARTY"]=L["Party"],["SOLO"]=L["Solo"],},
+						get = function(info) return groupselectvalue end,
+						set = function(info, value) groupselectvalue = value end,
+					},
+					profileselect = {
+						name = L["Profile"],
+						desc = L["Name of the profile which to switch to"],
+						type = "select",
+						order = 5,
+						values = function() LunaUF.db:GetProfiles(profiledb) profiledb["NIL"] = L["None"] return profiledb end,
+						hidden = function() return LunaUF.db.global.switchtype == "DISABLED" end,
+						get = function(info)
+							LunaUF.db:GetProfiles(profiledb)
+							profiledb["NIL"] = L["None"]
+							if LunaUF.db.global.switchtype == "RESOLUTION" then
+								local resolutions = {GetScreenResolutions()}
+								for k,v in pairs(resolutions) do
+									if k == resolutionselectvalue then
+										for i,j in pairs(profiledb) do
+											if LunaUF.db.global.resdb[v] == j then
+												return i
+											end
+										end
+									end
+								end
+								return "NIL"
+							else
+								for k,v in pairs(profiledb) do
+									if v == LunaUF.db.global.grpdb[groupselectvalue] then
+										return k
+									end
+								end
+								return "NIL"
+							end
+						end,
+						set = function(info, value)
+							LunaUF.db:GetProfiles(profiledb)
+							profiledb["NIL"] = L["None"]
+							if LunaUF.db.global.switchtype == "RESOLUTION" then
+								local resolutions = {GetScreenResolutions()}
+								for k,v in pairs(resolutions) do
+									if k == resolutionselectvalue then
+										LunaUF.db.global.resdb[v] = value ~= "NIL" and profiledb[value] or nil
+										return
+									end
+								end
+							else
+								LunaUF.db.global.grpdb[groupselectvalue] = value ~= "NIL" and profiledb[value] or nil
+							end
+						end,
+					},
+				},
+			},
 		},
 	}
 	for mod, tbl in pairs(moduleOptions) do
@@ -6050,6 +6258,7 @@ function LunaUF:CreateConfig()
 	AceConfigRegistry:RegisterOptionsTable(Addon, aceoptions, true)
 	aceoptions.args.profile = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
 	
+	
 	AceConfigDialog:AddToBlizOptions(Addon, nil, nil, "general")
 	AceConfigDialog:AddToBlizOptions(Addon, L["Colors"], Addon, "colors")
 	for _,unit in ipairs(LunaUF.unitList) do
@@ -6057,6 +6266,7 @@ function LunaUF:CreateConfig()
 	end
 	AceConfigDialog:AddToBlizOptions(Addon, L["Hide Blizzard"], Addon, "hidden")
 	AceConfigDialog:AddToBlizOptions(Addon, L["Tag Help"], Addon, "help")
+	AceConfigDialog:AddToBlizOptions(Addon, L["Auto Profiles"], Addon, "autoprofiles")
 	AceConfigDialog:AddToBlizOptions(Addon, L["Profiles"], Addon, "profile")
 	
 	AceConfigDialog:SetDefaultSize(Addon, 895, 570)
