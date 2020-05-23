@@ -163,7 +163,7 @@ local defaultTags = {
 								elseif UnitInRange(unit) then
 									return "30-40"
 								else
-									return ">40"
+									return "~"
 								end
 							end;
 	["race"]				= function(frame, unit)
