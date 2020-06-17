@@ -6,7 +6,7 @@ Some minor patches by Joxe.
 # LunaUnitFrames
 Unit Frames for WoW Classic
 
-DO NOT USE THE GREEN CLONE OR DOWNLOAD BUTTON. GET THE NEWEST RELEASE FROM THE RELEASE PAGE.
+DO NOT USE THE GREEN CLONE OR DOWNLOAD BUTTON. GET THE NEWEST RELEASE FROM THE [RELEASE](https://github.com/Aviana/LunaUnitFrames/releases) PAGE.
 
 
 Clickcasting:

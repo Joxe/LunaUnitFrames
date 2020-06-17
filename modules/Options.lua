@@ -2509,6 +2509,14 @@ function LunaUF:CreateConfig()
 							order = 2,
 							values = {["LEFT"] = L["Left"], ["RIGHT"] = L["Right"]},
 						},
+						type = {
+							name = L["Type"],
+							desc = L["Type"],
+							type = "select",
+							order = 3,
+							hidden = function(info) return (info[1] ~= "player" and info[1] ~= "pet") end,
+							values = {["elite"] = L["elite"], ["rare"] = L["rare"]},
+						},
 					},
 				},
 				role = {
@@ -2654,10 +2662,62 @@ function LunaUF:CreateConfig()
 						},
 					},
 				},
+				top = {
+					name = L["Top"],
+					type = "group",
+					order = 2,
+					inline = true,
+					args = {
+						enabled = {
+							name = L["Enable"],
+							desc = string.format(L["Enable or disable the %s."],L["Bottom right"]),
+							type = "toggle",
+							order = 1,
+						},
+						size = {
+							name = L["Size"],
+							desc = L["Set the size."],
+							type = "range",
+							order = 2,
+							min = 4,
+							max = 40,
+							step = 1,
+						},
+						type = {
+							name = L["Type"],
+							desc = L["What the indicator should display."],
+							type = "select",
+							order = 3,
+							values = { ["aggro"] = L["Aggro"], ["aura"] = L["Buff/Debuff"], ["ownaura"] = L["Own buff/debuff"], ["dispel"] = L["Dispel"] },
+							set = function(info, value) set(info,value) AceConfigRegistry:NotifyChange("LunaUnitFrames") end,
+						},
+						value = {
+							name = L["Name (exact) or ID"],
+							desc = L["Name (exact) or ID of the effect to track. Can have multiple entries seperated by ;"],
+							type = "input",
+							order = 4,
+							hidden = function(info) return LunaUF.db.profile.units[info[#info-3]].squares[info[#info-1]].type == "aggro" or LunaUF.db.profile.units[info[#info-3]].squares[info[#info-1]].type == "dispel" end,
+						},
+						timer = {
+							name = L["Timer"],
+							desc = string.format(L["Enable or disable the %s."],L["Timer"]),
+							type = "toggle",
+							order = 5,
+							hidden = function(info) return LunaUF.db.profile.units[info[#info-3]].squares[info[#info-1]].type == "aggro" end,
+						},
+						texture = {
+							name = L["Texture"],
+							desc = L["Show the spell texture instead of its type color."],
+							type = "toggle",
+							order = 6,
+							hidden = function(info) return LunaUF.db.profile.units[info[#info-3]].squares[info[#info-1]].type == "aggro" end,
+						},
+					},
+				},
 				topright = {
 					name = L["Top right"],
 					type = "group",
-					order = 2,
+					order = 3,
 					inline = true,
 					args = {
 						enabled = {
@@ -2710,7 +2770,7 @@ function LunaUF:CreateConfig()
 				leftcenter = {
 					name = L["Left Center"],
 					type = "group",
-					order = 3,
+					order = 4,
 					inline = true,
 					args = {
 						enabled = {
@@ -2763,7 +2823,7 @@ function LunaUF:CreateConfig()
 				center = {
 					name = L["Center"],
 					type = "group",
-					order = 4,
+					order = 5,
 					inline = true,
 					args = {
 						enabled = {
@@ -2816,7 +2876,7 @@ function LunaUF:CreateConfig()
 				rightcenter = {
 					name = L["Right Center"],
 					type = "group",
-					order = 5,
+					order = 6,
 					inline = true,
 					args = {
 						enabled = {
@@ -2869,7 +2929,7 @@ function LunaUF:CreateConfig()
 				bottomleft = {
 					name = L["Bottom left"],
 					type = "group",
-					order = 6,
+					order = 7,
 					inline = true,
 					args = {
 						enabled = {
@@ -2919,10 +2979,62 @@ function LunaUF:CreateConfig()
 						},
 					},
 				},
+				bottom = {
+					name = L["Bottom"],
+					type = "group",
+					order = 8,
+					inline = true,
+					args = {
+						enabled = {
+							name = L["Enable"],
+							desc = string.format(L["Enable or disable the %s."],L["Bottom right"]),
+							type = "toggle",
+							order = 1,
+						},
+						size = {
+							name = L["Size"],
+							desc = L["Set the size."],
+							type = "range",
+							order = 2,
+							min = 4,
+							max = 40,
+							step = 1,
+						},
+						type = {
+							name = L["Type"],
+							desc = L["What the indicator should display."],
+							type = "select",
+							order = 3,
+							values = { ["aggro"] = L["Aggro"], ["aura"] = L["Buff/Debuff"], ["ownaura"] = L["Own buff/debuff"], ["dispel"] = L["Dispel"] },
+							set = function(info, value) set(info,value) AceConfigRegistry:NotifyChange("LunaUnitFrames") end,
+						},
+						value = {
+							name = L["Name (exact) or ID"],
+							desc = L["Name (exact) or ID of the effect to track. Can have multiple entries seperated by ;"],
+							type = "input",
+							order = 4,
+							hidden = function(info) return LunaUF.db.profile.units[info[#info-3]].squares[info[#info-1]].type == "aggro" or LunaUF.db.profile.units[info[#info-3]].squares[info[#info-1]].type == "dispel" end,
+						},
+						timer = {
+							name = L["Timer"],
+							desc = string.format(L["Enable or disable the %s."],L["Timer"]),
+							type = "toggle",
+							order = 5,
+							hidden = function(info) return LunaUF.db.profile.units[info[#info-3]].squares[info[#info-1]].type == "aggro" end,
+						},
+						texture = {
+							name = L["Texture"],
+							desc = L["Show the spell texture instead of its type color."],
+							type = "toggle",
+							order = 6,
+							hidden = function(info) return LunaUF.db.profile.units[info[#info-3]].squares[info[#info-1]].type == "aggro" end,
+						},
+					},
+				},
 				bottomright = {
 					name = L["Bottom right"],
 					type = "group",
-					order = 7,
+					order = 9,
 					inline = true,
 					args = {
 						enabled = {
@@ -3403,7 +3515,7 @@ function LunaUF:CreateConfig()
 						order = 10,
 						type = "select",
 						name = L["Aura border"],
-						values = {["none"] = L["None"], ["blizzard"] = "Blizzard", ["light"] = L["Light"], ["dark"] = L["Dark"], ["black"] = L["Black"]},
+						values = {["none"] = L["None"], ["blizzard"] = "Blizzard", ["light"] = L["Light"], ["dark"] = L["Dark"], ["black"] = L["Black"], ["light-thin"] = L["Light thin"], ["dark-thin"] = L["Dark thin"], ["black-thin"] = L["Black thin"]},
 						set = function(info, value) setGeneral(info, value) LunaUF.Layout:Reload() end,
 					},
 					inchealTime = {
